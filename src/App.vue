@@ -1,14 +1,17 @@
 <template>
   <v-app>
     <v-toolbar color="secondary" dark>
-      <v-spacer></v-spacer>
       <v-toolbar-title>
-        {{titulo}}
+        <router-link class="blanco" :to="{ name: 'home' }">{{titulo}}</router-link>        
       </v-toolbar-title>
       <v-spacer></v-spacer>
+      <router-link class="mr-3 blanco" :to="{ name: 'registro' }">Regístrate</router-link>
+      <router-link class="blanco" :to="{ name: 'login' }">Login</router-link>
     </v-toolbar>
     <v-content>
-      <home />
+      <v-container fluid fill-height>
+        <router-view />
+      </v-container>
     </v-content>
     <v-footer color="secondary" dark>
       <v-flex text-xs-center class="pa-3">
@@ -18,7 +21,6 @@
   </v-app>
 </template>
 <script>
-import Home from '@/views/Home.vue'
 
 export default {
   name: 'App',
@@ -26,9 +28,6 @@ export default {
     return {
       titulo: 'Lienzos'
     }
-  },
-  components: {
-    Home: Home
   }
 }
 </script>
