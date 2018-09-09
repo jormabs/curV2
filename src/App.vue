@@ -1,29 +1,28 @@
 <template>
-  <div id="app">
-    <div id="nav">
-      <router-link to="/">Home</router-link> |
-      <router-link to="/about">About</router-link>
-    </div>
-    <router-view/>
+  <div id="app" class="principal">
+    {{titulo}}
   </div>
 </template>
 
-<style lang="scss">
-#app {
-  font-family: 'Avenir', Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-}
-#nav {
-  padding: 30px;
-  a {
-    font-weight: bold;
-    color: #2c3e50;
-    &.router-link-exact-active {
-      color: #42b983;
+<script>
+export default {
+  name: 'App',
+  data() {
+    return {
+      titulo: "¡Hola, yo sí soy Vue.js!"
     }
   }
 }
+</script>
+
+<style>
+  .principal {
+    border-color: #A851F1;
+    border-style: solid;
+    border-width: 10px;
+    background-color: lightgray;
+    width: 800px;
+    border-radius: 3px;
+    padding: 10px;
+  }
 </style>
