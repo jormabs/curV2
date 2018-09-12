@@ -1,7 +1,19 @@
 <template>
-  <div class="principal">
+  <v-layout align-start>
+    <div class="principal">
     <div class="contenido">
-      <div class="bloque">
+      <select v-model="vista">
+        <option value="1">Vista 1</option>
+        <option value="2">Vista 2</option>
+        <option value="3">Vista 3</option>
+        <option value="4">Vista 4</option>
+        <option value="5">Vista 5</option>
+        <option value="6">Vista 6</option>
+        <option value="7">Vista 7</option>
+        <option value="8">Vista 8</option>
+      </select>
+      <transition-group name="slide" mode="out-in" @enter="enter" @leave="leave">
+      <div v-if="vista != 1" :key="1" class="bloque">
         <div class="bloque__caracteristica">
           <span>{{mostrarDatos}}</span>
         </div>
@@ -17,7 +29,7 @@
           <span>{{ mensajeEnviado }}</span>
         </div>
       </div>
-      <div class="bloque">
+      <div v-if="vista != 2" :key="2" class="bloque">
         <div class="bloque__caracteristica">
           <span>Computed - Campos Calculados</span>
         </div>
@@ -29,7 +41,7 @@
           <span>{{ edad }}</span>
         </div>
       </div>
-      <div class="bloque">
+      <div v-if="vista != 3" :key="3" class="bloque">
         <div class="bloque__caracteristica">
           <span>v-bind - Enlazar Atributos</span>
         </div>
@@ -37,7 +49,7 @@
           <a :href="urlBiografia" target="_blank">Biografia</a>
         </div>
       </div>
-      <div class="bloque">
+      <div v-if="vista != 4" :key="4" class="bloque">
         <div class="bloque__caracteristica">
           <span>v-model y v-bind</span>
         </div>
@@ -53,7 +65,7 @@
           </div>
         </div>
       </div>
-      <div class="bloque">
+      <div v-if="vista != 5" :key="5" class="bloque">
         <div class="bloque__caracteristica">
           <span>v-once</span>
         </div>
@@ -61,7 +73,7 @@
           <span v-once>Email Original: {{email}}</span>
         </div>
       </div>
-      <div ref="coordenadas" class="bloque" @mousemove="actualizarCoordenadas">
+      <div v-if="vista != 6" :key="6" ref="coordenadas" class="bloque" @mousemove="actualizarCoordenadas">
         <div class="bloque__caracteristica">
           <span>Methods, Eventos v-on y ref</span>
         </div>
@@ -81,7 +93,7 @@
           </div>
         </div>
       </div>
-      <div class="bloque">
+      <div v-if="vista != 7" :key="7" class="bloque">
         <div class="bloque__caracteristica">
           <span>v-if, v-else, v-else-if, v-show</span>
         </div>
@@ -100,7 +112,7 @@
           </div>
         </div>
       </div>
-      <div class="bloque">
+      <div v-if="vista != 8" :key="8" class="bloque">
         <div class="bloque__caracteristica">
           <span>v-for</span>
         </div>
@@ -117,8 +129,10 @@
           </div>
         </div>
       </div>
+      </transition-group>
     </div>
   </div>
+  </v-layout>
 </template>
 
 <script>
@@ -126,6 +140,7 @@ export default {
   name: 'App',
   data() {
     return {
+      vista: 1,
       mostrarDatos: 'Mostrar Datos - {{dato}}',
       titulo: 'Información de Usuario',
       nombres: 'Isaac',
@@ -178,12 +193,20 @@ export default {
       this.mensajeEnviado = this.mensaje
     },
     actualizarCoordenadas(event) {
+      if(!this.$refs.coordenadas) return
+
       let recCoordenadas = this.$refs.coordenadas.getBoundingClientRect();
       this.x = Math.floor(event.clientX - recCoordenadas.left);
       this.y = Math.floor(event.clientY- recCoordenadas.top);
     },
     cambiarEstado(interes) {
       interes.activo = !interes.activo
+    },
+    enter(el) {
+      console.log("enter", el)
+    },
+    leave(el) {
+      console.log("leave", el)
     }
   }
 }
@@ -196,6 +219,7 @@ export default {
   border-radius: 20px;
   padding: 10px;
   margin: 10px;
+  vertical-align: super;
 }
 
 .contenido {
@@ -285,5 +309,42 @@ button {
 .btn-inactivar {
   background-color: #f61748; 
   font-size: 12pt;
+}
+
+.slide-enter {
+  opacity: 0;
+}
+
+.slide-enter-active {
+  animation: slide-in .6s ease-out forwards;
+  transition: opacity .6s  ease-out;
+}
+
+.slide-leave {
+  opacity: 1;
+}
+
+.slide-leave-active {
+  animation: slide-out .4s ease-out forwards;
+  transition: opacity .4s  ease-out;
+  opacity: 0;
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateY(-30px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-out {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(30px);
+  }
 }
 </style>
