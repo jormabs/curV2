@@ -10,13 +10,28 @@ import {
   VGrid,
   VToolbar,
   VCard,
+  transitions,
+  VForm,
+  VTextField,
+  VMenu,
+  VDatePicker,
+  VRadioGroup,
+  VSnackbar,
+  VTabs,
+  VDialog,
+  VChip,
+  VProgressCircular,
+  VProgressLinear,
+  VSpeedDial,
   VImg,
-  transitions
+  VTextarea,
+  VAutocomplete
 } from 'vuetify'
 import 'vuetify/src/stylus/app.styl'
 
 Vue.use(Vuetify, {
   components: {
+    Vuetify,
     VApp,
     VNavigationDrawer,
     VFooter,
@@ -26,8 +41,22 @@ Vue.use(Vuetify, {
     VGrid,
     VToolbar,
     VCard,
+    transitions,
+    VForm,
+    VTextField,
+    VMenu,
+    VDatePicker,
+    VRadioGroup,
+    VSnackbar,
+    VTabs,
+    VDialog,
+    VChip,
+    VProgressCircular,
+    VProgressLinear,
+    VSpeedDial,
     VImg,
-    transitions
+    VTextarea,
+    VAutocomplete
   },
   theme: {
     primary: '#FF5B8B',
