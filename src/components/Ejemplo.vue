@@ -138,6 +138,7 @@
 <script>
 export default {
   name: 'App',
+  props: ['uid'],
   data() {
     return {
       vista: 1,

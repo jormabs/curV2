@@ -23,6 +23,7 @@
 
 <script>
 import { auth, db } from '@/firebase'
+import { mapMutations } from 'vuex'
 
 export default {  
   data() {
@@ -32,13 +33,17 @@ export default {
     }
   },
   methods: {
+    ...mapMutations(['setUsuario']),    
     ingresar() {    
       auth.signInWithEmailAndPassword(this.email, this.password)
       .then(credenciales => {
         return db.collection("usuarios").doc(credenciales.user.uid).get()
       }) 
       .then(usuario => {
-        console.log(usuario.data())
+        // this.$emit("usuarioAutenticado", usuario.data())
+        this.setUsuario(usuario.data())
+        //this.$store.state.usuario = usuario.data()
+        this.$router.push({ name: 'home'})
       })
       .catch(err => {
         console.log(err)

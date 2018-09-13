@@ -94,13 +94,6 @@ export default {
           this.credenciales = credenciales.user
 
           console.log(this.credenciales)
-
-          auth.currentUser.getIdToken(/* forceRefresh */ true).then(function (idToken) {
-            console.log(idToken)
-          }).catch(function (err) {
-            console.log(err)
-          });
-
           this.vista++
         })
         .catch(error => {
@@ -123,7 +116,16 @@ export default {
         .doc(usuario.uid)
         .set(usuario)
         .then(() => {
-          console.log("Éxito")
+          return db.collection("usuarios").doc(usuario.uid).get()
+        })
+        .then(doc => {
+          if(doc.exists) {
+            this.$store.commit("setUsuario", doc.data())
+            this.$router.push({name: 'home'})
+          }
+          else {
+            console.log("Error")
+          }
         })
         .catch(error => {
           console.log(error)
