@@ -61,11 +61,15 @@ var router = new Router({
 
 router.beforeEach((to, from, next) => {
   if (to.matched.some(record => record.meta.requiresAuth)) {
+    console.log(store.state.usuario)
     if (store.state.usuario) {
       next()
     } else {
       next({
-        name: 'login'
+        name: 'login',
+        query: {
+          redirect: to.fullPath
+        }
       })
     }    
   }

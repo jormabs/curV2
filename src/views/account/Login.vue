@@ -9,7 +9,7 @@
         </v-toolbar>
         <v-card-text>
           <v-text-field label="Email" v-model="email" />
-          <v-text-field label="Contraseña" v-model="password" type="password" />          
+          <v-text-field label="Contraseña" v-model="password" type="password" />
         </v-card-text>
         <v-card-actions class="px-3 pb-3">
           <v-flex text-xs-right>
@@ -22,10 +22,10 @@
 </template>
 
 <script>
-import { auth, db } from '@/firebase'
+import { auth, firebase } from '@/firebase'
 import { mapMutations } from 'vuex'
 
-export default {  
+export default {
   data() {
     return {
       email: "",
@@ -33,21 +33,25 @@ export default {
     }
   },
   methods: {
-    ...mapMutations(['setUsuario']),    
-    ingresar() {    
-      auth.signInWithEmailAndPassword(this.email, this.password)
-      .then(credenciales => {
-        return db.collection("usuarios").doc(credenciales.user.uid).get()
-      }) 
-      .then(usuario => {
-        // this.$emit("usuarioAutenticado", usuario.data())
-        this.setUsuario(usuario.data())
-        //this.$store.state.usuario = usuario.data()
-        this.$router.push({ name: 'home'})
-      })
-      .catch(err => {
-        console.log(err)
-      })
+    ...mapMutations(['setUsuario']),
+    ingresar() {
+      auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL) // | LOCAL | SESSION | NONE | Si es LOCAL no es necesaria esta instrucción ya que es el valor por defecto.
+        .then(() => {
+          return auth.signInWithEmailAndPassword(this.email, this.password)
+        })
+        .then(() => {
+          // auth.currentUser.getIdToken(true).then(idToken => {
+          //   console.log(idToken)
+          // }).catch(function (error) {
+          //   console.log(error)
+          // })
+
+          this.$router.push(this.$route.query.redirect || "/");
+
+        })
+        .catch(err => {
+          console.log(err)
+        })
     }
   }
 }
