@@ -1,6 +1,35 @@
 <template>
   <v-app>
+    <v-navigation-drawer clipped v-model="drawer" fixed app temporary>
+      <v-list>
+        <v-list-tile replace :to="{ name: 'home' }" exact>
+          <v-list-tile-action>
+            <v-icon>home</v-icon>
+          </v-list-tile-action>
+          <v-list-tile-content>
+            <v-list-tile-title  color="black" class="font-weight-700" v-text="'Inicio'"></v-list-tile-title>
+          </v-list-tile-content>
+        </v-list-tile>
+        <v-list-tile v-if="usuario" :to="{ name: 'ejemplo' }">
+          <v-list-tile-action>
+            <v-icon>info</v-icon>
+          </v-list-tile-action>
+          <v-list-tile-title>
+            <v-list-tile-title color="black" class="font-weight-700" v-text="'Ejemplo'"></v-list-tile-title>
+          </v-list-tile-title>
+        </v-list-tile>
+        <v-list-tile v-if="usuario" :to="{ name: 'perfil' }">
+          <v-list-tile-action>
+            <v-icon>account_circle</v-icon>
+          </v-list-tile-action>
+          <v-list-tile-title>
+            <v-list-tile-title color="black" class="font-weight-700" v-text="'Perfil'"></v-list-tile-title>
+          </v-list-tile-title>
+        </v-list-tile>
+      </v-list>
+    </v-navigation-drawer>
     <v-toolbar color="secondary" dark>
+      <v-toolbar-side-icon @click.stop="drawer = !drawer"></v-toolbar-side-icon>
       <v-toolbar-title>
         <router-link class="blanco" :to="{ name: 'home' }">{{titulo}}</router-link>        
       </v-toolbar-title>
@@ -12,8 +41,10 @@
     </v-toolbar>
     <v-content>
       <v-container fluid fill-height>
-        <!-- <router-view @usuarioAutenticado="almacenarUsuario" /> -->
-        <router-view></router-view>
+        <v-slide-y-transition mode="out-in">
+          <!-- <router-view @usuarioAutenticado="almacenarUsuario" /> -->
+        <router-view :key="$route.fullPath"></router-view>
+        </v-slide-y-transition>        
       </v-container>
     </v-content>
     <v-footer color="secondary" dark>
@@ -30,6 +61,7 @@ export default {
   name: 'App',
   data () {
     return {
+      drawer: false,
       titulo: 'Lienzos'
     }
   },

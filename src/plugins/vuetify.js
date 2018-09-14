@@ -59,8 +59,8 @@ Vue.use(Vuetify, {
     VAutocomplete
   },
   theme: {
-    primary: '#FF5B8B',
-    secondary: '#a851f1',
+    primary: '#FF3575',
+    secondary: '#6B28C5',
     accent: '#82B1FF',
     error: '#FF5252',
     info: '#2196F3',

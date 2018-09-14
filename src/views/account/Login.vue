@@ -1,8 +1,8 @@
 <template>
   <v-layout align-center justify-center>
     <v-flex xs12 sm8 md6 lg5 xl4>
-      <v-card>
-        <v-toolbar dark color="secondary">
+      <v-card class="elevation-6">
+        <v-toolbar dark color="secondary" card flat>
           <v-toolbar-title>
             Ingresa
           </v-toolbar-title>
