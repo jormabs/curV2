@@ -4,12 +4,15 @@ import './plugins/vuetify'
 import App from './App.vue'
 import router from './router'
 import store from './store'
+import vuelidate from 'vuelidate'
 import {
   auth,
   db
 } from './firebase'
 import './registerServiceWorker'
 import './styles/main.scss'
+
+Vue.use(vuelidate)
 
 Vue.config.productionTip = false
 
@@ -21,8 +24,10 @@ auth.onAuthStateChanged(auth => {
       .doc(auth.uid)
       .get()
       .then(usuario => {
-        store.commit("setUsuario", usuario.data())
-
+        if(usuario.exists) {
+          store.commit("setUsuario", usuario.data())
+        }
+        
         inicializarVue()
       })
       .catch(err => {
@@ -36,7 +41,7 @@ auth.onAuthStateChanged(auth => {
 
 function inicializarVue() {
   if(!vue) {
-    new Vue({
+    vue = new Vue({
       router,
       store,
       render: h => h(App)
