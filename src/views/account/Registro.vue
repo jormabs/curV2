@@ -62,13 +62,7 @@
 <script>
 import { auth, db } from '@/firebase'
 import { email, required, minLength, maxLength, sameAs } from 'vuelidate/lib/validators'
-
-const letrasEspacios = value => {
-  if (typeof value === 'undefined' || value === null || value === '') {
-    return true
-  }
-  return /^(?! )(?!.*  )[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ ]+$/.test(value)
-}
+import { letrasEspacios } from '@/helpers/validaciones'
 
 export default {
   data() {
