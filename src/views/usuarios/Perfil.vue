@@ -4,7 +4,14 @@
       <div class="grid">
         <v-card class="perfil">
           <v-card-text class="perfil__foto">
-            <div class="perfil__foto-imagen"></div>
+            <img v-if="fotoPerfil" class="perfil__foto-imagen" :src="fotoPerfil.url" alt="">
+            <div class="perfil__foto-editar">
+              <v-fab-transition>
+                <v-btn v-if="editando" @click="editarFoto" color="primary" icon>
+                  <v-icon>edit</v-icon>
+                </v-btn>
+              </v-fab-transition>
+            </div>
           </v-card-text>
           <v-card-text class="perfil__nombres">
             <v-fab-transition>
@@ -37,10 +44,8 @@
 
           <v-card-actions v-if="permisosEditar" class="perfil__editar">
             <v-flex text-xs-center>
-              <v-slide-y-transition mode="out-in">
-                <v-btn v-if="!editando" :key="'editar'" @click="editando = true" color="primary">Editar</v-btn>
-                <v-btn v-else :key="'cancelar'" @click="editando = false" color="grey lighten-3">Cancelar</v-btn>
-              </v-slide-y-transition>
+              <v-btn v-if="!editando" :key="'editar'" @click="editando = true" color="primary">Editar</v-btn>
+              <v-btn v-else :key="'cancelar'" @click="editando = false" color="grey lighten-3">Cancelar</v-btn>
             </v-flex>
           </v-card-actions>
         </v-card>
@@ -74,9 +79,9 @@
             </v-card-text>
             <v-card-actions>
               <v-flex text-xs-right>
-                  <v-btn :depressed="$v.edicionDescripcion.$invalid" :disabled="$v.edicionDescripcion.$invalid" right color="primary" @click="guardarDescripcion">Guardar</v-btn>
-                  <v-btn right @click="editandoDescripcion = false">Cancelar</v-btn>
-                </v-flex>
+                <v-btn :depressed="$v.edicionDescripcion.$invalid" :disabled="$v.edicionDescripcion.$invalid" right color="primary" @click="guardarDescripcion">Guardar</v-btn>
+                <v-btn right @click="editandoDescripcion = false">Cancelar</v-btn>
+              </v-flex>
             </v-card-actions>
           </v-card>
         </v-dialog>
@@ -92,10 +97,37 @@
             </v-card-text>
             <v-card-actions>
               <v-flex text-xs-right>
-                  <v-btn :depressed="$v.edicionBiografia.$invalid" :disabled="$v.edicionBiografia.$invalid" right color="primary" @click="guardarBiografia">Guardar</v-btn>
-                  <v-btn right @click="editandoBiografia = false">Cancelar</v-btn>
-                </v-flex>
+                <v-btn :depressed="$v.edicionBiografia.$invalid" :disabled="$v.edicionBiografia.$invalid" right color="primary" @click="guardarBiografia">Guardar</v-btn>
+                <v-btn right @click="editandoBiografia = false">Cancelar</v-btn>
+              </v-flex>
             </v-card-actions>
+          </v-card>
+        </v-dialog>
+
+        <!-- Edición Foto -->
+        <v-dialog v-model="editandoFoto" max-width="600">
+          <v-card>
+            <v-toolbar dark color="secondary" card flat>
+              <v-toolbar-title class="white--text">Imagen de Perfil</v-toolbar-title>
+            </v-toolbar>
+            <v-card-text>
+              <v-flex text-xs-center>
+                <img v-if="pasoCargaImagen == 1 && fotoPerfil" class="edicionImagen__img" :src="fotoPerfil.url" alt="">
+                <div v-if="pasoCargaImagen == 2" ref="preview" class="preview"></div>
+                <canvas v-show="false" ref="canvas512x512" width="512" height="512"></canvas>
+              </v-flex>
+            </v-card-text>
+            <v-card-text>
+              <file-pond v-if="pasoCargaImagen == 1" label-idle="Selecciona o arrastra un imagen..." accepted-file-types="image/jpeg, image/png" labelFileTypeNotAllowed="Agrega una imagen .png o .jpg" fileValidateTypeLabelExpectedTypes="Se esperaba {allButLastType} o {lastType}" instant-upload="false" @addfile="cargarFoto" />
+
+              <div v-if="pasoCargaImagen == 2" class="editor">
+                <img ref="fotoOriginal" src="" alt="Imagen" class="edicionImagen">
+              </div>
+              <v-flex text-xs-right mt-2>
+                <v-btn color="gray" @click="editandoFoto = false">Cancelar</v-btn>
+                <v-btn color="primary" @click="guardarImagenTransaccion">Guardar</v-btn>
+              </v-flex>
+            </v-card-text>
           </v-card>
         </v-dialog>
       </div>
@@ -105,9 +137,21 @@
 
 <script>
 
-import { db } from '@/firebase'
+import { db, storage } from '@/firebase'
 import { required, minLength, maxLength, url } from 'vuelidate/lib/validators'
 import { letrasEspacios } from '@/helpers/validaciones'
+
+import "filepond/dist/filepond.min.css";
+import vueFilePond from "vue-filepond";
+import FilePondPluginFileValidateType from "filepond-plugin-file-validate-type";
+
+import Cropper from "cropperjs/dist/cropper";
+import "cropperjs/dist/cropper.css";
+
+import uuidv4 from "uuid/v4"
+
+const FilePond = vueFilePond(FilePondPluginFileValidateType);
+const pica = require("pica")();
 
 export default {
   data() {
@@ -116,6 +160,7 @@ export default {
       editando: false,
       editandoNombre: false,
       uid: null,
+      fotoPerfil: null,
       nombres: '',
       apellidos: '',
       edicionNombres: {
@@ -127,7 +172,11 @@ export default {
       edicionDescripcion: '',
       biografia: '',
       editandoBiografia: false,
-      edicionBiografia: ''
+      edicionBiografia: '',
+      editandoFoto: false,
+      edicionFoto: null,
+      pasoCargaImagen: 1,
+      cropper: null
     }
   },
   computed: {
@@ -166,6 +215,33 @@ export default {
 
       return errors
     }
+  },
+  created() {
+    this.uid = this.$route.params.uid
+
+    db.collection("usuarios")
+      .doc(this.uid)
+      .get()
+      .then(doc => {
+        if (doc.exists) {
+          let usuario = doc.data()
+          this.nombres = usuario.nombres
+          this.apellidos = usuario.apellidos
+          this.descripcion = usuario.descripcion || ''
+          this.biografia = usuario.biografia
+
+          if (usuario.fotoPerfil512) {
+            this.fotoPerfil = usuario.fotoPerfil512
+          } else {
+            this.fotoPerfil = this.$store.state.fotoPerfilDefecto512;
+          }
+
+          this.permisosEditar = this.uid == usuario.uid
+        }
+      })
+      .catch(err => {
+        console.log(err)
+      })
   },
   methods: {
     editarNombres() {
@@ -230,28 +306,163 @@ export default {
           console.log(error)
         })
     },
-  },
-  created() {
-    this.uid = this.$route.params.uid
+    editarFoto() {
+      this.pasoCargaImagen = 1
+      this.editandoFoto = true
+    },
+    cargarFoto(error, file) { // 1. FilePond - Seleccionar y arrastrar foto, posteriormente se lee el archivo cargado y se alamcena en el elemento ref='fotoOriginal'
+      if (error) {
+        console.log(error)
+        return
+      }
 
-    db.collection("usuarios")
-      .doc(this.uid)
-      .get()
-      .then(doc => {
-        if (doc.exists) {
-          let usuario = doc.data()
-          this.nombres = usuario.nombres
-          this.apellidos = usuario.apellidos
-          this.descripcion = usuario.descripcion || ''
-          this.biografia = usuario.biografia
+      this.pasoCargaImagen = 2
 
-          this.permisosEditar = this.uid == usuario.uid
+      let reader = new FileReader()
+
+      let vm = this;
+
+      reader.onloadend = function () {
+        vm.$refs.fotoOriginal.src = reader.result;
+        vm.recortarFoto()
+      };
+
+      if (file) {
+        if (file.file) {
+          reader.readAsDataURL(file.file);
         }
+      } else {
+        this.file = "";
+      }
+    },
+    recortarFoto() { // 2. Cropper - Recorta la foto de acuerdo a un aspect ratio indicado y la manipulación del usuario
+      console.log(this.$refs.fotoOriginal)
+      this.cropper = new Cropper(this.$refs.fotoOriginal, {
+        preview: this.$refs.preview,
+        aspectRatio: 1,
+        modal: false,
+        guides: true,
+        sized: false,
+        zoomable: false,
+        highlight: true,
+        background: false,
+        autoCrop: true
+      });
+
+      this.pasoImagen = 1;
+    },
+    guardarImagen() { // 3. Escalar la foto y almacenar.
+      let canvasOrigen = this.cropper.getCroppedCanvas();
+      let canvasDestino = this.$refs.canvas512x512;
+
+      pica
+      .resize(canvasOrigen, canvasDestino, { unsharpAmount: 100 })
+      .then(() => {
+        let imagen = canvasDestino.toDataURL("image/jpeg");
+        let fotoId = uuidv4()
+
+        let fotoPerfil = null
+
+        storage
+        .ref()
+        .child("usuarios/" + this.uid + "/fotos-perfil/" + fotoId + "-512x512.jpg")
+        .putString(imagen, "data_url")
+        .then(snapshot => {
+          return snapshot.ref.getDownloadURL()
+        })
+        .then(url => {
+          
+          fotoPerfil = {
+            id: fotoId + "-512x512",
+            idRaiz: fotoId,
+            size: 512,
+            fecha: new Date(),
+            url: url,
+            uid: this.uid
+          }
+
+          return db
+          .collection("usuarios")
+          .doc(this.uid)
+          .collection("fotosPerfil")
+          .doc(fotoPerfil.id)
+          .set(fotoPerfil)
+        })
+        .then(() => {
+          return db
+          .collection("usuarios")
+          .doc(this.uid)
+          .update({fotoPerfil512: fotoPerfil})
+        })
+        .then(() => {
+          return db
+          .collection("fotosPerfil")
+          .doc(fotoPerfil.id)
+          .set(fotoPerfil)
+        })
+        .then(() => {
+          this.editando = false
+          this.editandoFoto = false
+          this.fotoPerfil = fotoPerfil
+        })
+        .catch(error => {
+          console.log(error)
+          this.editando = false
+          this.editandoFoto = false
+        })
       })
-      .catch(err => {
-        console.log(err)
+    },
+    guardarImagenTransaccion() { // 3. Escalar la foto y almacenar. (Modo transacción)
+      let canvasOrigen = this.cropper.getCroppedCanvas();
+      let canvasDestino = this.$refs.canvas512x512;
+
+      pica
+      .resize(canvasOrigen, canvasDestino, { unsharpAmount: 100 })
+      .then(() => {
+        let imagen = canvasDestino.toDataURL("image/jpeg");
+        let fotoId = uuidv4()
+
+        let fotoPerfil = null
+
+        storage
+        .ref()
+        .child("usuarios/" + this.uid + "/fotos-perfil/" + fotoId + "-512x512.jpg")
+        .putString(imagen, "data_url")
+        .then(snapshot => {
+          return snapshot.ref.getDownloadURL()
+        })
+        .then(url => {
+          
+          fotoPerfil = {
+            id: fotoId + "-512x512",
+            idRaiz: fotoId,
+            size: 512,
+            fecha: new Date(),
+            url: url,
+            uid: this.uid
+          }
+
+          let batch = db.batch()
+
+          batch.set(db.collection("usuarios").doc(this.uid).collection("fotosPerfil").doc(fotoPerfil.id), fotoPerfil)
+          batch.update(db.collection("usuarios").doc(this.uid), {fotoPerfil512: fotoPerfil})
+          batch.set(db.collection("fotosPerfil").doc(fotoPerfil.id), fotoPerfil)
+
+          return batch.commit()
+        })
+        .then(() => {
+          this.editando = false
+          this.editandoFoto = false
+          this.fotoPerfil = fotoPerfil
+        })
+        .catch(error => {
+          console.log(error)
+          this.editando = false
+          this.editandoFoto = false
+        })
       })
-  },
+    }
+  },  
   validations: {
     edicionNombres: {
       nombres: { required, minLength: minLength(3), maxLength: maxLength(20), letrasEspacios },
@@ -263,15 +474,55 @@ export default {
     edicionBiografia: {
       url
     }
+  },
+  components: {
+    FilePond
   }
 }
 </script>
 
 
 <style>
+/* Cropper */
+.editor {
+  padding: 0;
+  margin: 0;
+}
+
+.cropper-drag-box {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  margin: 0;
+}
+
+.filepond--drop-label {
+  font-size: 14pt !important;
+}
+
 .grid {
   display: grid;
   justify-items: center;
+}
+
+.edicionImagen {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.edicionImagen__img {
+  width: 200px;
+  height: 200px;
+  border-radius: 3px;
+}
+
+.preview {
+  overflow: hidden;
+  margin: 0 auto;
+  border-radius: 1%;
+  height: 200px;
+  width: 200px;
 }
 
 .perfil {
@@ -298,12 +549,24 @@ export default {
   display: grid;
   grid-area: foto;
   justify-items: center;
+  justify-content: center;
+  align-self: start;
 }
 
 .perfil__foto-imagen {
   width: 200px;
   height: 200px;
-  background-color: rgb(136, 173, 243);
+  border-radius: 3px;
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.perfil__foto-editar {
+  align-self: end;
+  justify-self: end;
+  grid-column: 1;
+  grid-row: 1;
+  opacity: 0.9;
 }
 
 .perfil__nombres {
@@ -311,49 +574,55 @@ export default {
   grid-area: nombres;
 
   grid-auto-flow: column;
-  grid-template-columns: min-content max-content;
+  grid-template-columns: max-content min-content;
   align-items: center;
 }
 
 .perfil__nombres-editar {
-  grid-column: 1;
+  grid-column: 2;
 }
 
 .perfil__nombres-texto {
   font-size: 20px;
   font-weight: bold;
 
-  grid-column: 2;
+  grid-column: 1;
 }
 
 .perfil__descripcion {
   display: grid;
   grid-area: descripcion;
+
+  grid-auto-flow: column;
+  grid-template-columns: 1fr min-content;
 }
 
 .perfil__descripcion-editar {
-  grid-column: 1;
+  grid-column: 2;
 }
 
 .perfil__descripcion-texto {
   font-size: 16px;
-  grid-column: 2;
+  grid-column: 1;
 }
 
 .perfil__biografia {
   display: grid;
   grid-area: biografia;
+  align-items: center;
+  grid-template-columns: max-content min-content;
+  grid-auto-flow: column;
 }
 
 .perfil__biografia-editar {
-  grid-column: 1;
+  grid-column: 2;
 }
 
 .perfil__biografia-link {
   text-decoration: none;
   font-size: 16px;
   color: #6b28c5;
-  grid-column: 2;
+  grid-column: 1;
 }
 
 .perfil__editar {
@@ -384,6 +653,12 @@ export default {
 
   .perfil__descripcion-texto {
     text-align: center;
+  }
+
+  .perfil__biografia {
+    justify-items: center;
+    justify-content: center;
+    grid-template-columns: auto auto;
   }
 }
 </style>

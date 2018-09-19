@@ -6,6 +6,11 @@ Vue.use(Vuex)
 
 export default new Vuex.Store({
   state: {
+    fotoPerfilDefecto512: 
+    {
+      size: 512,
+      url: require('@/assets/fotoUsuario512.png')
+    },
     usuario: null
   },
   mutations: {

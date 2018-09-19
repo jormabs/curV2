@@ -18,7 +18,7 @@
             <v-list-tile-title color="black" class="font-weight-700" v-text="'Ejemplo'"></v-list-tile-title>
           </v-list-tile-title>
         </v-list-tile>
-        <v-list-tile v-if="usuario" :to="{ name: 'perfil' }">
+        <v-list-tile v-if="usuario" :to="{ name: 'perfil', params: { uid: usuario.uid} }">
           <v-list-tile-action>
             <v-icon>account_circle</v-icon>
           </v-list-tile-action>

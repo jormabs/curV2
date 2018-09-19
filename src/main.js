@@ -26,6 +26,7 @@ auth.onAuthStateChanged(auth => {
       .then(usuario => {
         if(usuario.exists) {
           store.commit("setUsuario", usuario.data())
+          
         }
         
         inicializarVue()
