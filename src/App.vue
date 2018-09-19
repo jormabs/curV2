@@ -36,17 +36,38 @@
       <v-spacer></v-spacer>      
       <router-link v-if="!usuario" class="mr-3 blanco" :to="{ name: 'registro' }">Regístrate</router-link>
       <router-link v-if="!usuario" class="blanco" :to="{ name: 'login' }">Login</router-link>
-      <span class="mr-3 blanco">{{edad}}</span>
+      <router-link :to="{ path: 'users/' + usuario.uid}" class="usuario-toolbar">
+        <img :src="fotoPerfil512.url" :alt="usuario.nombres" class="usuario-toolbar-imagen">
+        <span class="usuario-toolbar-nombres">{{usuario.nombres}}</span>
+      </router-link>
       <a v-if="usuario" @click="salir" class="blanco">Salir</a>
     </v-toolbar>
     <v-content>
       <v-container fluid fill-height>
         <v-slide-y-transition mode="out-in">
-          <!-- <router-view @usuarioAutenticado="almacenarUsuario" /> -->
         <router-view :key="$route.fullPath"></router-view>
         </v-slide-y-transition>        
-      </v-container>
+      </v-container>      
     </v-content>
+    <v-snackbar v-model="snackbar.visible" :color="snackbar.color" multi-line :timeout="6000" top dark>
+      {{ snackbar.mensaje }}
+      <v-btn color="white" flat @click="ocultarMensaje">
+        Cerrar
+      </v-btn>
+    </v-snackbar>
+     <v-dialog v-model="ocupado.activo" max-width="400">
+      <v-card>
+        <v-toolbar dark color="primary" card flat>
+          <v-toolbar-title class="white--text">{{ocupado.titulo}}</v-toolbar-title>
+        </v-toolbar>
+        <v-card-text class="subheading">
+          {{ocupado.mensaje}}
+        </v-card-text>
+        <v-card-text>
+          <v-progress-linear :indeterminate="true" color="primary"></v-progress-linear>
+        </v-card-text>
+      </v-card>
+    </v-dialog>    
     <v-footer color="secondary" dark>
       <v-flex text-xs-center class="pa-3">
         <span>Curso Vue.js y Firebase 2018</span>
@@ -56,7 +77,7 @@
 </template>
 <script>
 
-import { mapState, mapGetters, mapActions } from 'vuex'
+import { mapState, mapMutations, mapGetters, mapActions } from 'vuex'
 export default {
   name: 'App',
   data () {
@@ -66,23 +87,35 @@ export default {
     }
   },
   computed: {
-    ...mapState(['usuario']),
-    ...mapGetters(['edad']),
-
-    usuarioConvencional() {
-      return this.$store.state.usuario // Llamado convencional al state, equivalente a ...mapState(['usuario'])
-    }
+    ...mapState(['usuario', 'ocupado', 'snackbar']),
+    ...mapGetters(['fotoPerfil512'])
   },
   methods: {
-    // almacenarUsuario(usuario) {
-    //   this.usuario = usuario
-    //   this.$router.push({ name: 'home'})
-    // },
-    // salir() {
-    //   this.$store.dispatch("salir") // Llamado convencional a actions en vuex
-    // },
-    ...mapActions(['salir'])
-    
+    ...mapMutations(['ocultarMensaje']),
+    ...mapActions(['salir'])    
   }
 }
 </script>
+
+<style>
+
+.usuario-toolbar {
+  display: grid;
+  grid-auto-flow: column;
+  grid-gap: 10px;
+  align-items: center;
+  margin-right: 10px;
+}
+
+.usuario-toolbar-imagen {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+
+.usuario-toolbar-nombres {
+  color: white;
+}
+
+</style>
+

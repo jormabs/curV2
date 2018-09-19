@@ -125,7 +125,7 @@
               </div>
               <v-flex text-xs-right mt-2>
                 <v-btn color="gray" @click="editandoFoto = false">Cancelar</v-btn>
-                <v-btn color="primary" @click="guardarImagenTransaccion">Guardar</v-btn>
+                <v-btn color="primary" @click="guardarImagen">Guardar</v-btn>
               </v-flex>
             </v-card-text>
           </v-card>
@@ -140,6 +140,7 @@
 import { db, storage } from '@/firebase'
 import { required, minLength, maxLength, url } from 'vuelidate/lib/validators'
 import { letrasEspacios } from '@/helpers/validaciones'
+import { mapState, mapMutations } from 'vuex'
 
 import "filepond/dist/filepond.min.css";
 import vueFilePond from "vue-filepond";
@@ -180,6 +181,7 @@ export default {
     }
   },
   computed: {
+    ...mapState(['usuario']),
     nombreCompleto() {
       return this.nombres + ' ' + this.apellidos
     },
@@ -244,6 +246,7 @@ export default {
       })
   },
   methods: {
+    ...mapMutations(['setFotoPerfil', 'setNombres', 'mostrarOcupado', 'ocultarOcupado', 'mostrarExito', 'mostrarError']),
     editarNombres() {
       this.editandoNombre = true
       this.edicionNombres.nombres = this.nombres
@@ -251,6 +254,7 @@ export default {
     },
     guardarNombres() {
       this.editandoNombre = false
+      this.mostrarOcupado({ titulo: 'Actualizando Nombre', mensaje: 'Actualizando tus nombres y apellidos, espera un momento...' })
 
       db
         .collection("usuarios")
@@ -260,9 +264,13 @@ export default {
           this.nombres = this.edicionNombres.nombres
           this.apellidos = this.edicionNombres.apellidos
           this.editando = false
+          this.setNombres({nombres: this.nombres, apellidos: this.apellidos})
+          this.ocultarOcupado()
+          this.mostrarExito('Nombre actualizado con éxito')
         })
-        .catch(error => {
-          console.log(error)
+        .catch(() => {
+          this.mostrarError('Ocurrió un error almacenando el nombre, inténtalo más tarde.')
+          this.ocultarOcupado()
         })
     },
     editarDescripcion() {
@@ -271,6 +279,7 @@ export default {
     },
     guardarDescripcion() {
       this.editandoDescripcion = false
+      this.mostrarOcupado({ titulo: 'Actualizando Nombre', mensaje: 'Actualizando tu descripción, espera un momento...' })
 
       db.collection("usuarios")
         .doc(this.uid)
@@ -280,9 +289,11 @@ export default {
         .then(() => {
           this.descripcion = this.edicionDescripcion
           this.editando = false
+          this.ocultarOcupado()
         })
         .catch(error => {
           console.log(error)
+          this.ocultarOcupado()
         })
     },
     editarBiografia() {
@@ -293,6 +304,8 @@ export default {
       if (this.edicionBiografia == this.fraseBiografiaInicial) return
       this.editandoBiografia = false
 
+      this.mostrarOcupado({ titulo: 'Actualizando Biografía', mensaje: 'Actualizando tu biografía, espera un momento...' })
+
       db.collection("usuarios")
         .doc(this.uid)
         .update({
@@ -301,9 +314,11 @@ export default {
         .then(() => {
           this.biografia = this.edicionBiografia
           this.editando = false
+          this.ocultarOcupado()
         })
         .catch(error => {
           console.log(error)
+          this.ocultarOcupado()
         })
     },
     editarFoto() {
@@ -351,68 +366,12 @@ export default {
 
       this.pasoImagen = 1;
     },
-    guardarImagen() { // 3. Escalar la foto y almacenar.
-      let canvasOrigen = this.cropper.getCroppedCanvas();
-      let canvasDestino = this.$refs.canvas512x512;
+    guardarImagen() { // 3. Escalar la foto y almacenar. (Modo transacción)
+      this.editando = false
+      this.editandoFoto = false
 
-      pica
-      .resize(canvasOrigen, canvasDestino, { unsharpAmount: 100 })
-      .then(() => {
-        let imagen = canvasDestino.toDataURL("image/jpeg");
-        let fotoId = uuidv4()
+      this.mostrarOcupado({ titulo: 'Almacenando Imagen', mensaje: 'Actualizando tu imagen de perfil, espera un momento...' })
 
-        let fotoPerfil = null
-
-        storage
-        .ref()
-        .child("usuarios/" + this.uid + "/fotos-perfil/" + fotoId + "-512x512.jpg")
-        .putString(imagen, "data_url")
-        .then(snapshot => {
-          return snapshot.ref.getDownloadURL()
-        })
-        .then(url => {
-          
-          fotoPerfil = {
-            id: fotoId + "-512x512",
-            idRaiz: fotoId,
-            size: 512,
-            fecha: new Date(),
-            url: url,
-            uid: this.uid
-          }
-
-          return db
-          .collection("usuarios")
-          .doc(this.uid)
-          .collection("fotosPerfil")
-          .doc(fotoPerfil.id)
-          .set(fotoPerfil)
-        })
-        .then(() => {
-          return db
-          .collection("usuarios")
-          .doc(this.uid)
-          .update({fotoPerfil512: fotoPerfil})
-        })
-        .then(() => {
-          return db
-          .collection("fotosPerfil")
-          .doc(fotoPerfil.id)
-          .set(fotoPerfil)
-        })
-        .then(() => {
-          this.editando = false
-          this.editandoFoto = false
-          this.fotoPerfil = fotoPerfil
-        })
-        .catch(error => {
-          console.log(error)
-          this.editando = false
-          this.editandoFoto = false
-        })
-      })
-    },
-    guardarImagenTransaccion() { // 3. Escalar la foto y almacenar. (Modo transacción)
       let canvasOrigen = this.cropper.getCroppedCanvas();
       let canvasDestino = this.$refs.canvas512x512;
 
@@ -450,15 +409,14 @@ export default {
 
           return batch.commit()
         })
-        .then(() => {
-          this.editando = false
-          this.editandoFoto = false
+        .then(() => {          
           this.fotoPerfil = fotoPerfil
+          this.setFotoPerfil(fotoPerfil)
+          this.ocultarOcupado()
         })
         .catch(error => {
           console.log(error)
-          this.editando = false
-          this.editandoFoto = false
+          this.ocultarOcupado()
         })
       })
     }
