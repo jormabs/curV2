@@ -202,13 +202,9 @@ export default {
         .collection('reservas')
         .get()
         .then(query => {
-          let reservas = []
-
           query.forEach(doc => {
-            reservas.push(doc.data())
-          });
+            let reserva = doc.data()
 
-          reservas.forEach(reserva => {
             let asiento = this.presentacion.asientos.find(a => a.x == reserva.x && a.y == reserva.y)
 
             asiento.usuario = reserva.usuario
