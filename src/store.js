@@ -9,10 +9,8 @@ Vue.use(Vuex)
 
 export default new Vuex.Store({
   state: {
-    fotoPerfilDefecto512: {
-      size: 512,
-      url: require('@/assets/fotoUsuario512.png')
-    },
+    fotoPerfilDefecto512: require('@/assets/fotoUsuario512.png'),
+    fotoPerfil: null,
     usuario: null,
     snackbar: {
       visible: false,
@@ -22,7 +20,8 @@ export default new Vuex.Store({
       activo: false,
       titulo: "",
       mensaje: ""
-    }
+    },
+    teatros: null
   },
   mutations: {
     setUsuario(state, usuario) {
@@ -33,7 +32,10 @@ export default new Vuex.Store({
       state.usuario.apellidos = payload.apellidos
     },
     setFotoPerfil(state, fotoPerfil) {
-      state.usuario.fotoPerfil512 = fotoPerfil
+      state.fotoPerfil = fotoPerfil
+    },
+    setTeatros(state, teatros) {
+      state.teatros = teatros
     },
     mostrarExito(state, mensaje) {
       state.snackbar.color = "success"
@@ -71,9 +73,7 @@ export default new Vuex.Store({
     }
   },
   actions: {
-    salir({
-      commit
-    }) {
+    salir({ commit }) {
       auth.signOut()
         .then(() => {
           commit("setUsuario", null)
@@ -90,12 +90,8 @@ export default new Vuex.Store({
       let diferencia = fechaActual - new Date(state.usuario.fechaNacimiento.seconds * 1000)
       return Math.floor(diferencia / (1000 * 60 * 60 * 24 * 365.25)).toString()
     },
-    fotoPerfil512(state) {
-      if (!state.usuario || !state.usuario.fotoPerfil512) {
-        return state.fotoPerfilDefecto512
-      } else {
-        return state.usuario.fotoPerfil512
-      }
+    fotoPerfil(state) {
+      return state.fotoPerfil || state.fotoPerfilDefecto512
     }
   }
 })

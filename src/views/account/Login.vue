@@ -21,7 +21,7 @@
   </v-layout>
 </template>
 
-<script>
+<script scoped>
 import { auth, firebase } from '@/firebase'
 import { mapMutations } from 'vuex'
 import { email, required, minLength, maxLength } from 'vuelidate/lib/validators'

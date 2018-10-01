@@ -5,10 +5,14 @@ import store from './store'
 import Ejemplo from './components/Ejemplo.vue'
 
 import Home from './views/Home.vue'
+import NotFound from './views/NotFound.vue'
 
 import Login from './views/account/Login.vue'
 import Registro from './views/account/Registro.vue'
 import Perfil from './views/usuarios/Perfil.vue'
+import Listas from './views/admin/Listas.vue'
+import Obra from './views/teatro/Obra.vue'
+import Presentacion from './views/teatro/Presentacion.vue'
 
 Vue.use(Router)
 
@@ -39,6 +43,11 @@ var router = new Router({
       component: Login
     },
     {
+      path: '/admin/listas',
+      name: 'listas',
+      component: Listas
+    },
+    {
       path: '/users/:uid',
       name: 'perfil',
       component: Perfil,
@@ -46,6 +55,25 @@ var router = new Router({
         requiresAuth: true
       }
     },
+    {
+      path: '/obras/:oid',
+      name: 'obra',
+      component: Obra
+    },
+    {
+      path: '/:oid/:tid/:fecha',
+      name: 'presentacion',
+      component: Presentacion
+    },
+    {
+      path: '/404',
+      name: '404',
+      component: NotFound
+    },
+    {
+      path: '*',
+      component: NotFound
+    }
   ]
 })
 
@@ -60,7 +88,7 @@ router.beforeEach((to, from, next) => {
           redirect: to.fullPath
         }
       })
-    }    
+    }
   }
 
   next()

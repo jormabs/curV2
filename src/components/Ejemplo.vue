@@ -238,13 +238,13 @@ export default {
 }
 
 .bloque__caracteristica {
-  font-size: 14pt;
+  font-size: 1.2em;
   color: rgb(78, 78, 78);
   margin: 5px;
 }
 
 .bloque__contenido {
-  font-size: 18pt;
+  font-size: 1.5em;
   color: rgb(15, 15, 15);
   margin: 5px;
   padding: 5px;
@@ -282,7 +282,7 @@ a {
 
 input[type=text] {
   border-radius: 5px;
-  font-size: 14pt;
+  font-size: 1.2em;
 }
 
 button {
@@ -298,18 +298,18 @@ button {
 .btn-accion {  
   margin: 3px !important;
   background-color: #ff5b8b;
-  font-size: 20pt;
+  font-size: 1.6em;
   min-width: 36px;
 }
 
 .btn-activar { 
   background-color: #16b431; 
-  font-size: 12pt;
+  font-size: 1em;
 }
 
 .btn-inactivar {
   background-color: #f61748; 
-  font-size: 12pt;
+  font-size: 1em;
 }
 
 .slide-enter {

@@ -1,4 +1,5 @@
 import Vue from 'vue'
+import * as directives from 'vuetify/es5/directives'
 import {
   Vuetify,
   VApp,
@@ -25,7 +26,9 @@ import {
   VSpeedDial,
   VImg,
   VTextarea,
-  VAutocomplete
+  VAutocomplete,
+  VAvatar,
+  VTooltip
 } from 'vuetify'
 import 'vuetify/src/stylus/app.styl'
 
@@ -56,12 +59,15 @@ Vue.use(Vuetify, {
     VSpeedDial,
     VImg,
     VTextarea,
-    VAutocomplete
+    VAutocomplete,
+    VAvatar,
+    VTooltip
   },
+  directives,
   theme: {
-    primary: '#FF3575',
-    secondary: '#6B28C5',
-    accent: '#82B1FF',
+    primary: '#553F75',
+    secondary: '#A21010',
+    accent: '#553F75',
     error: '#FF5252',
     info: '#2196F3',
     success: '#4CAF50',

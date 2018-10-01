@@ -62,7 +62,7 @@
 <script>
 import { auth, db } from '@/firebase'
 import { email, required, minLength, maxLength, sameAs } from 'vuelidate/lib/validators'
-import { letrasEspacios } from '@/helpers/validaciones'
+import { letrasEspacios } from '@/utilidades/validaciones'
 
 export default {
   data() {

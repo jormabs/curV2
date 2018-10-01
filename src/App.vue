@@ -36,8 +36,8 @@
       <v-spacer></v-spacer>      
       <router-link v-if="!usuario" class="mr-3 blanco" :to="{ name: 'registro' }">Regístrate</router-link>
       <router-link v-if="!usuario" class="blanco" :to="{ name: 'login' }">Login</router-link>
-      <router-link :to="{ path: 'users/' + usuario.uid}" class="usuario-toolbar">
-        <img :src="fotoPerfil512.url" :alt="usuario.nombres" class="usuario-toolbar-imagen">
+      <router-link v-if="usuario" :to="{ path: '/users/' + usuario.uid}" class="usuario-toolbar">
+        <img :src="fotoPerfil" :alt="usuario.nombres" class="usuario-toolbar-imagen">
         <span class="usuario-toolbar-nombres">{{usuario.nombres}}</span>
       </router-link>
       <a v-if="usuario" @click="salir" class="blanco">Salir</a>
@@ -69,7 +69,7 @@
       </v-card>
     </v-dialog>    
     <v-footer color="secondary" dark>
-      <v-flex text-xs-center class="pa-3">
+      <v-flex text-xs-center>
         <span>Curso Vue.js y Firebase 2018</span>
       </v-flex>      
     </v-footer>
@@ -83,12 +83,12 @@ export default {
   data () {
     return {
       drawer: false,
-      titulo: 'Lienzos'
+      titulo: 'Súper Ópera'
     }
   },
   computed: {
     ...mapState(['usuario', 'ocupado', 'snackbar']),
-    ...mapGetters(['fotoPerfil512'])
+    ...mapGetters(['fotoPerfil'])
   },
   methods: {
     ...mapMutations(['ocultarMensaje']),
@@ -97,7 +97,7 @@ export default {
 }
 </script>
 
-<style>
+<style scoped>
 
 .usuario-toolbar {
   display: grid;

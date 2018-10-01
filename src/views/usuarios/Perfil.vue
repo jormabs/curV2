@@ -4,7 +4,7 @@
       <div class="grid">
         <v-card class="perfil">
           <v-card-text class="perfil__foto">
-            <img v-if="fotoPerfil" class="perfil__foto-imagen" :src="fotoPerfil.url" alt="">
+            <img v-if="fotoPerfil" class="perfil__foto-imagen" :src="fotoPerfil" alt="">
             <div class="perfil__foto-editar">
               <v-fab-transition>
                 <v-btn v-if="editando" @click="editarFoto" color="primary" icon>
@@ -112,7 +112,7 @@
             </v-toolbar>
             <v-card-text>
               <v-flex text-xs-center>
-                <img v-if="pasoCargaImagen == 1 && fotoPerfil" class="edicionImagen__img" :src="fotoPerfil.url" alt="">
+                <img v-if="pasoCargaImagen == 1 && fotoPerfil" class="edicionImagen__img" :src="fotoPerfil" alt="">
                 <div v-if="pasoCargaImagen == 2" ref="preview" class="preview"></div>
                 <canvas v-show="false" ref="canvas512x512" width="512" height="512"></canvas>
               </v-flex>
@@ -135,11 +135,11 @@
   </v-layout>
 </template>
 
-<script>
+<script scoped>
 
 import { db, storage } from '@/firebase'
 import { required, minLength, maxLength, url } from 'vuelidate/lib/validators'
-import { letrasEspacios } from '@/helpers/validaciones'
+import { letrasEspacios } from '@/utilidades/validaciones'
 import { mapState, mapMutations } from 'vuex'
 
 import "filepond/dist/filepond.min.css";
@@ -232,8 +232,18 @@ export default {
           this.descripcion = usuario.descripcion || ''
           this.biografia = usuario.biografia
 
-          if (usuario.fotoPerfil512) {
-            this.fotoPerfil = usuario.fotoPerfil512
+          if (usuario.fotoPerfilId) {
+            storage
+                .ref()
+                .child("usuarios/" + usuario.uid + "/fotos-perfil/perfil-512x512.jpg")
+                .getDownloadURL()
+                .then(url => {
+                  this.fotoPerfil = url
+                })
+                .catch(() => {
+                 this.fotoPerfil = this.$store.state.fotoPerfilDefecto512;
+                })
+          
           } else {
             this.fotoPerfil = this.$store.state.fotoPerfilDefecto512;
           }
@@ -264,7 +274,7 @@ export default {
           this.nombres = this.edicionNombres.nombres
           this.apellidos = this.edicionNombres.apellidos
           this.editando = false
-          this.setNombres({nombres: this.nombres, apellidos: this.apellidos})
+          this.setNombres({ nombres: this.nombres, apellidos: this.apellidos })
           this.ocultarOcupado()
           this.mostrarExito('Nombre actualizado con éxito')
         })
@@ -376,51 +386,56 @@ export default {
       let canvasDestino = this.$refs.canvas512x512;
 
       pica
-      .resize(canvasOrigen, canvasDestino, { unsharpAmount: 100 })
-      .then(() => {
-        let imagen = canvasDestino.toDataURL("image/jpeg");
-        let fotoId = uuidv4()
+        .resize(canvasOrigen, canvasDestino, { unsharpAmount: 100 })
+        .then(() => {
+          let imagen = canvasDestino.toDataURL("image/jpeg");
+          //let fotoId = uuidv4()
+          let fotoId = uuidv4()
 
-        let fotoPerfil = null
+          let fotoPerfil = null
 
-        storage
-        .ref()
-        .child("usuarios/" + this.uid + "/fotos-perfil/" + fotoId + "-512x512.jpg")
-        .putString(imagen, "data_url")
-        .then(snapshot => {
-          return snapshot.ref.getDownloadURL()
+          storage
+          .ref()
+            .child("usuarios/" + this.uid + "/fotos-perfil/" + fotoId + "-512x512.jpg")
+            .putString(imagen, "data_url")
+            .then(() => {
+              return storage
+                .ref()
+                .child("usuarios/" + this.uid + "/fotos-perfil/perfil-512x512.jpg")
+                .putString(imagen, "data_url")
+            })
+            .then(snapshot => {
+              return snapshot.ref.getDownloadURL();
+            })
+            .then(url => {
+              fotoPerfil = {
+                id: fotoId,
+                fecha: new Date(),
+                uid: this.uid,
+                _512: true
+              }
+
+              this.fotoPerfil = url
+
+              let batch = db.batch()
+
+              batch.set(db.collection("usuarios").doc(this.uid).collection("fotosPerfil").doc(fotoId), fotoPerfil)
+              batch.update(db.collection("usuarios").doc(this.uid), { fotoPerfilId: fotoId })
+              batch.set(db.collection("fotosPerfil").doc(fotoId), fotoPerfil)
+
+              return batch.commit()
+            })
+            .then(() => {
+              this.setFotoPerfil(this.fotoPerfil)
+              this.ocultarOcupado()
+            })
+            .catch(error => {
+              console.log(error)
+              this.ocultarOcupado()
+            })
         })
-        .then(url => {
-          
-          fotoPerfil = {
-            id: fotoId + "-512x512",
-            idRaiz: fotoId,
-            size: 512,
-            fecha: new Date(),
-            url: url,
-            uid: this.uid
-          }
-
-          let batch = db.batch()
-
-          batch.set(db.collection("usuarios").doc(this.uid).collection("fotosPerfil").doc(fotoPerfil.id), fotoPerfil)
-          batch.update(db.collection("usuarios").doc(this.uid), {fotoPerfil512: fotoPerfil})
-          batch.set(db.collection("fotosPerfil").doc(fotoPerfil.id), fotoPerfil)
-
-          return batch.commit()
-        })
-        .then(() => {          
-          this.fotoPerfil = fotoPerfil
-          this.setFotoPerfil(fotoPerfil)
-          this.ocultarOcupado()
-        })
-        .catch(error => {
-          console.log(error)
-          this.ocultarOcupado()
-        })
-      })
     }
-  },  
+  },
   validations: {
     edicionNombres: {
       nombres: { required, minLength: minLength(3), maxLength: maxLength(20), letrasEspacios },
