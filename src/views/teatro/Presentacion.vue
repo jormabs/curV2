@@ -59,20 +59,20 @@
         </div>
       </v-slide-y-transition>
       <v-slide-y-transition mode="out-in">
-      <div v-if="pagados && pagados.length > 0" class="presentacion__pagadas">
-        <h4 class="pagadas-titulo">Compras Anteriores</h4>
-        <div class="pagadas-lista">
-          <v-chip v-for="(asiento, index) in pagados" :key="index" text-color="grey darken-1">
-            <v-avatar>
-              <v-icon color="grey darken-1">monetization_on</v-icon>
-            </v-avatar>
-            {{asiento.descripcion}}: $ {{asiento.precio}}
-          </v-chip>
+        <div v-if="pagados && pagados.length > 0" class="presentacion__pagadas">
+          <h4 class="pagadas-titulo">Compras Anteriores</h4>
+          <div class="pagadas-lista">
+            <v-chip v-for="(asiento, index) in pagados" :key="index" text-color="grey darken-1">
+              <v-avatar>
+                <v-icon color="grey darken-1">monetization_on</v-icon>
+              </v-avatar>
+              {{asiento.descripcion}}: $ {{asiento.precio}}
+            </v-chip>
+          </div>
+          <div class="pagadas-total">
+            Total: $ {{totalPagado.toLocaleString()}}
+          </div>
         </div>
-        <div class="pagadas-total">
-          Total: $ {{totalPagado.toLocaleString()}}
-        </div>
-      </div>
       </v-slide-y-transition>
       <v-card class="teatro">
         <div class="teatro__escenario">
@@ -112,6 +112,62 @@ export default {
   computed: {
     ...mapState(['usuario', 'teatros'])
   },
+  created() {
+    let oid = this.$route.params.oid
+    let tid = this.$route.params.tid
+    let fecha = this.$route.params.fecha
+
+    let pid = `${oid}-${tid}-${fecha}`
+
+    let presentacion = null
+
+    db.collection('obras').doc(oid).get()
+      .then(doc => {
+        this.obra = doc.data()
+
+        return db
+          .collection('obras')
+          .doc(oid)
+          .collection('presentaciones')
+          .doc(pid)
+          .get()
+      })
+      .then(doc => {
+        if (doc.exists) {
+          presentacion = doc.data()
+
+          this.teatro = this.teatros.find(t => t.tid == tid)
+
+          let dicCategorias = {}
+
+          this.categorias = []
+
+          this.teatro.categorias.forEach(item => {
+            dicCategorias[item.categoria] = { color: item.color, precio: this.obra.categorias.find(i => i.categoria == item.categoria).precio }
+            this.categorias.push(dicCategorias[item.categoria])
+          });
+
+          let asientosPresentacion = this.teatro.asientos.map(asiento => {
+            let precio = dicCategorias[asiento.categoria].precio
+            let color = dicCategorias[asiento.categoria].color
+            return { descripcion: asiento.descripcion, x: asiento.x, y: asiento.y, estado: 'disponible', precio, color, cambiandoEstado: false }
+          })
+
+          presentacion.asientos = asientosPresentacion
+
+          this.presentacion = presentacion
+
+          this.consultarReservas()
+        }
+        else {
+          this.$router.push({ name: 'home' })
+          return Promise.reject()
+        }
+      })
+      .catch(err => {
+        console.log(err)
+      })
+  },
   methods: {
     ...mapMutations(['mostrarError', 'mostrarExito', 'mostrarOcupado', 'ocultarOcupado']),
     onResize() {
@@ -136,6 +192,42 @@ export default {
       else {
         this.size = 27
       }
+    },
+    consultarReservas() {
+      db
+        .collection('obras')
+        .doc(this.obra.oid)
+        .collection('presentaciones')
+        .doc(this.presentacion.pid)
+        .collection('reservas')
+        .get()
+        .then(query => {
+          let reservas = []
+
+          query.forEach(doc => {
+            reservas.push(doc.data())
+          });
+
+          reservas.forEach(reserva => {
+            let asiento = this.presentacion.asientos.find(a => a.x == reserva.x && a.y == reserva.y)
+
+            asiento.usuario = reserva.usuario
+
+            if (reserva.estado == 'pagado') {
+              asiento.estado = 'pagado'
+              this.pagados.push(asiento)
+              this.totalPagado += asiento.precio
+            }
+            else if (reserva.uid == this.usuario.uid) {
+              asiento.estado = 'seleccionado'
+              this.seleccionados.push(asiento)
+              this.totalSeleccionado += asiento.precio
+            }
+            else {
+              asiento.estado = 'ocupado'
+            }
+          });
+        })
     },
     obtenerFechaPresentacion() {
       if (!this.presentacion) return ''
@@ -284,97 +376,6 @@ export default {
           this.mostrarError('Ocurrió un error efectuando el pago. Inténtalo más tarde.')
         })
     }
-  },
-  created() {
-    let oid = this.$route.params.oid
-    let tid = this.$route.params.tid
-    let fecha = this.$route.params.fecha
-
-    let pid = `${oid}-${tid}-${fecha}`
-
-    let presentacion = null
-    let reservas = []
-
-    db
-      .collection('obras')
-      .doc(oid)
-      .collection('presentaciones')
-      .doc(pid)
-      .get()
-      .then(doc => {
-        if (doc.exists) {
-          presentacion = doc.data()
-
-          return db
-            .collection('obras')
-            .doc(oid)
-            .collection('presentaciones')
-            .doc(pid)
-            .collection('reservas')
-            .get()
-        }
-        else {
-          this.$router.push({ name: 'home' })
-          return Promise.reject()
-        }
-
-      })
-      .then(query => {
-        query.forEach(doc => {
-          reservas.push(doc.data())
-        });
-
-        return db.collection('obras').doc(oid).get()
-      })
-      .then(doc => {
-        this.obra = doc.data()
-
-        this.teatro = this.teatros.find(t => t.tid == tid)
-
-        let dicCategorias = {}
-
-        this.categorias = []
-
-        this.teatro.categorias.forEach(item => {
-          dicCategorias[item.categoria] = { color: item.color, precio: this.obra.categorias.find(i => i.categoria == item.categoria).precio }
-          this.categorias.push(dicCategorias[item.categoria])
-        });
-
-        let asientosPresentacion = this.teatro.asientos.map(asiento => {
-          let precio = dicCategorias[asiento.categoria].precio
-          let color = dicCategorias[asiento.categoria].color
-          return { descripcion: asiento.descripcion, x: asiento.x, y: asiento.y, estado: 'disponible', precio, color, cambiandoEstado: false }
-        })
-
-        reservas.forEach(reserva => {
-          let asiento = asientosPresentacion.find(a => a.x == reserva.x && a.y == reserva.y)
-
-          asiento.usuario = reserva.usuario
-
-          if (reserva.estado == 'pagado') {
-            asiento.estado = 'pagado'
-            this.pagados.push(asiento)
-            this.totalPagado += asiento.precio
-          }
-          else if (reserva.uid == this.usuario.uid) {
-            asiento.estado = 'seleccionado'
-            this.seleccionados.push(asiento)
-            this.totalSeleccionado += asiento.precio
-          }
-          else {
-            asiento.estado = 'ocupado'
-          }
-        });
-
-        presentacion.asientos = asientosPresentacion
-
-        this.presentacion = presentacion
-      })
-      .catch(err => {
-        console.log(err)
-      })
-
-
   }
 }
 </script>
